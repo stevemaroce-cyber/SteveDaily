@@ -1,4 +1,4 @@
-name: SteveDaily Android
+name: SteveDaily Alarm
 
 on:
   workflow_dispatch:
