@@ -18,7 +18,7 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Extraer proyecto
-run: unzip -q STEVE_Daily_Lab_v03_Fuente_Android.zip -d lab
+        run: unzip -q STEVE_Daily_Lab_v03_Fuente_Android.zip -d lab
       - name: Compilar APK
         run: gradle -p lab --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
