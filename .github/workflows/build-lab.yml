@@ -1,7 +1,7 @@
-name: Compilar STEVE Daily Lab
+name: Compilar STEVE Daily v1.17 LAB
 on:
   push:
-    branches: [main]
+    branches: [v1.17-lab]
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,10 +18,12 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Extraer proyecto
-        run: unzip -q STEVE_Daily_Lab_v04_Fuente_Android.zip -d lab
+        run: unzip -q STEVE_Daily_v1.17_LAB_FUENTE.zip -d lab
       - name: Compilar APK
         run: gradle -p lab --no-daemon assembleDebug
+      - name: Nombrar APK
+        run: cp lab/app/build/outputs/apk/debug/app-debug.apk STEVE_Daily_v1.17_LAB_MOTOROLA.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: STEVE-Daily-Lab-APK
-          path: lab/app/build/outputs/apk/debug/app-debug.apk
+          name: STEVE-Daily-v1.17-LAB-APK
+          path: STEVE_Daily_v1.17_LAB_MOTOROLA.apk
