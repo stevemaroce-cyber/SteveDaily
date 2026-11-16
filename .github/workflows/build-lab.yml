@@ -32,7 +32,6 @@ jobs:
             echo "::error::No se encontro sdkmanager"
             exit 1
           fi
-          echo "Usando: $SDKMANAGER"
           "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install 'platforms;android-35' 'build-tools;35.0.0'
       - name: Extraer fuente v1.17.5
         run: |
@@ -42,6 +41,14 @@ jobs:
           test -s lab/app/src/main/java/com/stevedaily/app/BackupManager.kt
           grep -F "versionName '1.17.5-MOTOROLA-LAB'" lab/app/build.gradle
           grep -F "applicationId 'com.stevedaily.motorola.lab.v1175'" lab/app/build.gradle
+      - name: Corregir error Kotlin de To Buy
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=lab/app/src/main/java/com/stevedaily/app/MainActivity.kt
+          grep -F 'o.put("bought", false).remove("boughtAt").remove("purchaseId")' "$FILE"
+          sed -i 's@o.put("bought", false).remove("boughtAt").remove("purchaseId")@o.put("bought", false); o.remove("boughtAt"); o.remove("purchaseId")@' "$FILE"
+          grep -F 'o.put("bought", false); o.remove("boughtAt"); o.remove("purchaseId")' "$FILE"
       - name: Compilar APK de laboratorio
         run: gradle -p lab --no-daemon assembleDebug --stacktrace
       - name: Verificar APK
@@ -65,4 +72,3 @@ jobs:
             lab/apk-metadata.txt
             lab/apk-sha256.txt
           retention-days: 60
-          
