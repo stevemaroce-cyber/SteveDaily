@@ -23,13 +23,17 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Instalar Android 35 desde SDK preinstalado en GitHub
+      - name: Instalar Android 35
         shell: bash
         run: |
           set -euo pipefail
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          command -v sdkmanager
-          sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::No se encontro sdkmanager"
+            exit 1
+          fi
+          echo "Usando: $SDKMANAGER"
+          "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --install 'platforms;android-35' 'build-tools;35.0.0'
       - name: Extraer fuente v1.17.5
         run: |
           set -euo pipefail
@@ -40,7 +44,7 @@ jobs:
           grep -F "applicationId 'com.stevedaily.motorola.lab.v1175'" lab/app/build.gradle
       - name: Compilar APK de laboratorio
         run: gradle -p lab --no-daemon assembleDebug --stacktrace
-      - name: Verificar APK antes de publicarla
+      - name: Verificar APK
         shell: bash
         run: |
           set -euo pipefail
@@ -51,7 +55,7 @@ jobs:
           grep -F "name='com.stevedaily.motorola.lab.v1175'" lab/apk-metadata.txt
           grep -F "versionName='1.17.5-MOTOROLA-LAB'" lab/apk-metadata.txt
           sha256sum "$APK" | tee lab/apk-sha256.txt
-      - name: Guardar APK descargable si compila correctamente
+      - name: Guardar APK descargable
         uses: actions/upload-artifact@v4
         with:
           name: STEVE-Daily-v1.17.5-LAB-APK
@@ -61,3 +65,4 @@ jobs:
             lab/apk-metadata.txt
             lab/apk-sha256.txt
           retention-days: 60
+          
