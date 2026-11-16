@@ -1,43 +1,63 @@
-name: Compilar STEVE Daily Lab
+name: Compilar STEVE Daily v1.17.5 LAB
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
-  build:
+  android-debug:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Obtener repositorio
+        uses: actions/checkout@v4
+      - name: Preparar Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Extraer fuente corregida
-        run: unzip -q STEVE_Daily_Lab_v04_Fuente_Android.zip -d lab
-      - name: Verificar version esperada
-        run: grep -F "versionName '1.17.1-MOTOROLA-LAB'" lab/app/build.gradle
-      - name: Compilar y comprobar APK
+      - name: Instalar Android 35 desde SDK preinstalado en GitHub
+        shell: bash
         run: |
-          gradle -p lab --no-daemon assembleDebug
+          set -euo pipefail
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          command -v sdkmanager
+          sdkmanager --install 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Extraer fuente v1.17.5
+        run: |
+          set -euo pipefail
+          unzip -q STEVE_Daily_1_17_5_LISTO_PARA_DESCARGAR.zip -d lab
+          test -s lab/app/src/main/java/com/stevedaily/app/MainActivity.kt
+          test -s lab/app/src/main/java/com/stevedaily/app/BackupManager.kt
+          grep -F "versionName '1.17.5-MOTOROLA-LAB'" lab/app/build.gradle
+          grep -F "applicationId 'com.stevedaily.motorola.lab.v1175'" lab/app/build.gradle
+      - name: Compilar APK de laboratorio
+        run: gradle -p lab --no-daemon assembleDebug --stacktrace
+      - name: Verificar APK antes de publicarla
+        shell: bash
+        run: |
+          set -euo pipefail
           APK=lab/app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" > lab/apk-metadata.txt
-          grep -F "versionName='1.17.1-MOTOROLA-LAB'" lab/apk-metadata.txt
-          sha256sum "$APK" > lab/apk-sha256.txt
-      - uses: actions/upload-artifact@v4
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee lab/apk-metadata.txt
+          grep -F "name='com.stevedaily.motorola.lab.v1175'" lab/apk-metadata.txt
+          grep -F "versionName='1.17.5-MOTOROLA-LAB'" lab/apk-metadata.txt
+          sha256sum "$APK" | tee lab/apk-sha256.txt
+      - name: Guardar APK descargable si compila correctamente
+        uses: actions/upload-artifact@v4
         with:
-          name: STEVE-Daily-1.17.1-LAB-APK
+          name: STEVE-Daily-v1.17.5-LAB-APK
           if-no-files-found: error
           path: |
             lab/app/build/outputs/apk/debug/app-debug.apk
             lab/apk-metadata.txt
             lab/apk-sha256.txt
+          retention-days: 60
